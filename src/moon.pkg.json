@@ -1,0 +1,9 @@
+{
+  "import": ["moonbitlang/x/encoding"],
+  "link": {
+    "native": {
+      "cc": "echo"
+    }
+  },
+  "supported-targets": ["native"]
+}
