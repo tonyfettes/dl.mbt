@@ -17,8 +17,11 @@ pub impl Show for DynamicLibraryError
 // Types and methods
 type DynamicLibrary
 pub fn DynamicLibrary::close(Self) -> Unit raise DynamicLibraryError
+pub fn[T] DynamicLibrary::funcref(Self, String) -> FuncRef[T] raise DynamicLibraryError
+#as_free_fn(open)
 pub fn DynamicLibrary::open(String) -> Self raise DynamicLibraryError
 pub fn DynamicLibrary::symbol(Self, String) -> @pointer.Pointer[Unit] raise DynamicLibraryError
+pub fn[T] DynamicLibrary::try_funcref(Self, String) -> FuncRef[T]?
 pub fn DynamicLibrary::try_open(String) -> Self?
 pub fn DynamicLibrary::try_symbol(Self, String) -> @pointer.Pointer[Unit]?
 

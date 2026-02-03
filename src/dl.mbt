@@ -30,6 +30,7 @@ pub const RTLD_LAZY = 0x1
 pub const RTLD_NOW = 0x2
 
 ///|
+#as_free_fn(open)
 pub fn DynamicLibrary::open(
   path : String,
 ) -> DynamicLibrary raise DynamicLibraryError {
@@ -62,6 +63,15 @@ pub fn DynamicLibrary::symbol(
 }
 
 ///|
+pub fn[T] DynamicLibrary::funcref(
+  self : DynamicLibrary,
+  symbol : String,
+) -> FuncRef[T] raise DynamicLibraryError {
+  let ptr = self.symbol(symbol)
+  ptr.unsafe_into()
+}
+
+///|
 pub fn DynamicLibrary::try_symbol(
   self : DynamicLibrary,
   symbol : String,
@@ -71,6 +81,17 @@ pub fn DynamicLibrary::try_symbol(
     return None
   }
   Some(ptr)
+}
+
+///|
+pub fn[T] DynamicLibrary::try_funcref(
+  self : DynamicLibrary,
+  symbol : String,
+) -> FuncRef[T]? {
+  match self.try_symbol(symbol) {
+    None => None
+    Some(ptr) => Some(ptr.unsafe_into())
+  }
 }
 
 ///|

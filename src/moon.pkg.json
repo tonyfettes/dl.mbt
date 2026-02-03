@@ -6,5 +6,10 @@
     },
     "tonyfettes/c"
   ],
-  "native-stub": ["dl.c"]
+  "native-stub": [
+    "dl.c"
+  ],
+  "test-import": [
+    "tonyfettes/platform"
+  ]
 }
