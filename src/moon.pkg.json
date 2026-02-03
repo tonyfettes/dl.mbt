@@ -8,8 +8,5 @@
   ],
   "native-stub": [
     "dl.c"
-  ],
-  "test-import": [
-    "tonyfettes/platform"
   ]
 }
