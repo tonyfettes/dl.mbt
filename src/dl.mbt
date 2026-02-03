@@ -1,17 +1,27 @@
 ///|
-extern type DynamicLibrary
+struct DynamicLibrary(@c.Pointer[Unit])
 
 ///|
-type! DynamicLibraryError String derive(Show)
+suberror DynamicLibraryError {
+  DynamicLibraryError(String)
+} derive(Show)
 
 ///|
-extern "c" fn DynamicLibrary::open_(
-  path : Bytes,
-  flags : Int
-) -> Nullable[DynamicLibrary] = "moonbit_dlopen"
+#borrow(path)
+extern "c" fn dlopen(path : Bytes, flags : Int) -> @c.Pointer[Unit] = "moonbit_dlopen"
 
 ///|
-extern "c" fn DynamicLibrary::error() -> Nullable[Bytes] = "moonbit_dlerror"
+#borrow(symbol)
+extern "c" fn dlsym(
+  handle : @c.Pointer[Unit],
+  symbol : Bytes,
+) -> @c.Pointer[Unit] = "moonbit_dlsym"
+
+///|
+extern "c" fn dlclose(handle : @c.Pointer[Unit]) -> Int = "moonbit_dlclose"
+
+///|
+extern "c" fn dlerror() -> Bytes = "moonbit_dlerror"
 
 ///|
 pub const RTLD_LAZY = 0x1
@@ -22,19 +32,52 @@ pub const RTLD_NOW = 0x2
 ///|
 pub fn DynamicLibrary::open(
   path : String,
-  flags : Int
-) -> DynamicLibrary!DynamicLibraryError {
-  let path_bytes = @buffer.new()
-  path_bytes.write_bytes(@encoding.encode(UTF8, path))
-  path_bytes.write_byte(0)
-  let library = DynamicLibrary::open_(path_bytes.contents(), flags)
-  if library.is_none() {
-    let bytes = DynamicLibrary::error().unwrap()
-    let message = @encoding.decode_lossy(UTF8, bytes).to_string()
-    raise DynamicLibraryError(message)
+) -> DynamicLibrary raise DynamicLibraryError {
+  let handle = dlopen(@encoding/utf8.encode(path), RTLD_LAZY)
+  if handle.is_null() {
+    raise DynamicLibraryError(@encoding/utf8.decode_lossy(dlerror()))
   }
-  library.unwrap()
+  DynamicLibrary(handle)
 }
 
 ///|
-pub extern "c" fn DynamicLibrary::close(self : DynamicLibrary) = "moonbit_dlclose"
+pub fn DynamicLibrary::try_open(path : String) -> DynamicLibrary? {
+  let handle = dlopen(@encoding/utf8.encode(path), RTLD_LAZY)
+  if handle.is_null() {
+    return None
+  }
+  Some(DynamicLibrary(handle))
+}
+
+///|
+pub fn DynamicLibrary::symbol(
+  self : DynamicLibrary,
+  symbol : String,
+) -> @c.Pointer[Unit] raise DynamicLibraryError {
+  let ptr = dlsym(self.0, @encoding/utf8.encode(symbol))
+  if ptr.is_null() {
+    raise DynamicLibraryError(@encoding/utf8.decode_lossy(dlerror()))
+  }
+  ptr
+}
+
+///|
+pub fn DynamicLibrary::try_symbol(
+  self : DynamicLibrary,
+  symbol : String,
+) -> @c.Pointer[Unit]? {
+  let ptr = dlsym(self.0, @encoding/utf8.encode(symbol))
+  if ptr.is_null() {
+    return None
+  }
+  Some(ptr)
+}
+
+///|
+pub fn DynamicLibrary::close(
+  self : DynamicLibrary,
+) -> Unit raise DynamicLibraryError {
+  if dlclose(self.0) != 0 {
+    raise DynamicLibraryError(@encoding/utf8.decode_lossy(dlerror()))
+  }
+}
